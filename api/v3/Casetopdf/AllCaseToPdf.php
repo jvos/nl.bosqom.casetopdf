@@ -1,4 +1,5 @@
 <?php
+set_time_limit(0);
 
 /**
  * Job.AllCaseToPdf API specification (optional)

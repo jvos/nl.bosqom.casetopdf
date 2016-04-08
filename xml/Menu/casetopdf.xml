@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/casetopdf/page</path>
+    <page_callback>CRM_Casetopdf_Page_Page</page_callback>
+    <title>Page</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>

@@ -72,19 +72,19 @@ function civicrm_api3_casetopdf_allcasetopdf($params) {
 
       return civicrm_api3_create_success($return);
     }
+        
+    $filename = $pathname . '(' . $dao->case_id . '_' . $dao->contact_id . ')' . '.pdf';
+    if(CRM_Casetopdf_Config::file_exists($filename)){
+      continue;
+    }
     
     $htmlcasereport  = new CRM_Casetopdf_Case_XMLProcessor_Report();
-    $html = $htmlcasereport->htmlCaseReport($dao->case_id, $dao->contact_id, $activitySetName, $isRedact, $includeActivities);
+    $html = $htmlcasereport->htmlCaseReport($dao->case_id, $dao->contact_id);
     if(isset($html['is_error']) and $html['is_error']){
       $return['message'][] = $html['error_message'];
       if($debug){
         echo $html['error_message'] . '<br/>' . PHP_EOL;
       }
-    }
-    
-    $filename = $pathname . '(' . $dao->case_id . '_' . $dao->contact_id . ')' . '.pdf';
-    if('0' != $limit and CRM_Casetopdf_Config::file_exists($filename)){
-      continue;
     }
     
     $output = CRM_Utils_PDF_Utils::html2pdf($html, $filename, true);

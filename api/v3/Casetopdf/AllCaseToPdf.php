@@ -26,6 +26,7 @@ function civicrm_api3_casetopdf_allcasetopdf($params) {
   $limit = CRM_Utils_Array::value('limit', $params, '0');
     
   $return['is_error'] = false;
+  $return['message'] = [];
   
   if($debug){
     $return['message'][] = ts('Debug is on !');
@@ -33,18 +34,7 @@ function civicrm_api3_casetopdf_allcasetopdf($params) {
   }
   
   $config = CRM_Casetopdf_Config::singleton();
-  /*echo('$config->hovHouseholdCustomFields: <pre>');
-  print_r($config->hovHouseholdCustomFields);
-  echo('</pre>');
-  
-  echo('$config->perGegevensCustomFields: <pre>');
-  print_r($config->perGegevensCustomFields);
-  echo('</pre>');*/
-  
-  $Persoonsnummer_First = "Persoonsnummer_First";
-  $HOV_nummer_First = "HOV_nummer_First";
-  $VGE_adres_First = "VGE_adres_First";
-  
+    
   $customFileUploadDir = CRM_Casetopdf_Config::getSetting('customFileUploadDir');  
   $pathname = $customFileUploadDir . 'casetopdf/';
     
@@ -53,53 +43,65 @@ function civicrm_api3_casetopdf_allcasetopdf($params) {
     if($debug){
       echo $return['error_message'] . '<br/>' . PHP_EOL;
     }
-    return $return;
+    return civicrm_api3_create_error($return);
     
   }
   $return['message'][] = ts('Directory created, with $pathname \'%s\'.' . $pathname);
   
   $query = "SELECT * FROM civicrm_case
     LEFT JOIN civicrm_case_contact ON civicrm_case_contact.case_id = civicrm_case.id
+    LEFT JOIN civicrm_contact ON civicrm_contact.id = civicrm_case_contact.contact_id
+    WHERE civicrm_case.is_deleted = '0' AND civicrm_contact.is_deleted = '0'
   ";
   
-  if(0 != $limit){
-    $query .= " LIMIT " . $limit;
-  }
-    
   if(!$dao = CRM_Core_DAO::executeQuery($query)){
     $return['is_error'] = true;
     $return['error_message'] = sprintf('Failed execute query (%s) !', $query);
     if($debug){
       echo $return['error_message'] . '<br/>' . PHP_EOL;
     }
-    return $return;
+    return civicrm_api3_create_error($return);
   }
   
-  
+  $count = 0;
   while ($dao->fetch()) { 
+    if('0' != $limit and $limit == $count){
+      if($debug){
+        CRM_Utils_System::civiExit();
+      }
+
+      return civicrm_api3_create_success($return);
+    }
+    
     $htmlcasereport  = new CRM_Casetopdf_Case_XMLProcessor_Report();
     $html = $htmlcasereport->htmlCaseReport($dao->case_id, $dao->contact_id, $activitySetName, $isRedact, $includeActivities);
     if(isset($html['is_error']) and $html['is_error']){
-      $return['is_error'] = true;
-      $return['error_message'] = $html['error_message'];
+      $return['message'][] = $html['error_message'];
       if($debug){
-        echo $return['error_message'] . '<br/>' . PHP_EOL;
+        echo $html['error_message'] . '<br/>' . PHP_EOL;
       }
-      return $return;
     }
-
-    $filename = $pathname . $dao->case_id . '-' . $dao->contact_id . '.pdf';
+    
+    $filename = $pathname . '(' . $dao->case_id . '_' . $dao->contact_id . ')' . '.pdf';
+    if('0' != $limit and CRM_Casetopdf_Config::file_exists($filename)){
+      continue;
+    }
+    
     $output = CRM_Utils_PDF_Utils::html2pdf($html, $filename, true);
-    $return = CRM_Casetopdf_Config::fwrite($filename, $output, 'w');
-    var_dump($return);
-    if($return['is_error']){
+    $_return = CRM_Casetopdf_Config::fwrite($filename, $output, 'w');
+    
+    if($_return['is_error']){
+      $return['message'][] = $_return['error_message'];
       if($debug){
-        echo $return['error_message'] . '<br/>' . PHP_EOL;
+        echo $_return['error_message'] . '<br/>' . PHP_EOL;
       }
-      return $return;
 
+    }else {
+      $return['message'][] = ts('Pdf file created, with $filename \'%1\'.', array(1 => $filename));
+      echo ts('Pdf file created, with $filename \'%1\'.', array(1 => $filename)) . '<br/>' . PHP_EOL;
     }
-    $return['message'][] = ts('File created, with $pathname \'%s\'.' . $pathname);
+    
+    $count++;
   }
   
   if($debug){

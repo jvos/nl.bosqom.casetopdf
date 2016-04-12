@@ -5,7 +5,7 @@ class CRM_Casetopdf_Config {
    */
   static private $_singleton = NULL;
   
-  private $hovHouseholdCustomGroupName = 'Huurovereenkomst (huishouden)';
+  /*private $hovHouseholdCustomGroupName = 'Huurovereenkomst (huishouden)';
   public $hovHouseholdCustomGroupId = 0;
   public $hovHouseholdCustomTableName = '';
   public $hovHouseholdCustomFields = [];
@@ -15,15 +15,24 @@ class CRM_Casetopdf_Config {
   public $perGegevensCustomTableName = '';
   public $perGegevensCustomFields = [];
   
+  private $hoofdhuurderRelationshipTypeName = 'Hoofdhuurder';
+  public $hoofdhuurderRelationshipTypeId = 0;
+  
+  private $medehuurderRelationshipTypeName = 'Medehuurder';
+  public $medehuurderRelationshipTypeId = 0;*/
+  
   /**
    * Constructor function
    */
   function __construct() {
-    $this->setHovHouseholdCustomGroup();
+    /*$this->setHovHouseholdCustomGroup();
     $this->setPerGegevensCustomGroup();
+    
+    $this->setHoofdhuurderRelationshipTypeId();
+    $this->setMedehuurderRelationshipTypeId();*/
   }
   
-  // Huurovereenkomst Household
+  /*// Huurovereenkomst Household
   private function setHovHouseholdCustomGroup(){
     try {
       $customGroup = civicrm_api3('CustomGroup', 'Getsingle', array('name' => $this->hovHouseholdCustomGroupName));
@@ -75,45 +84,51 @@ class CRM_Casetopdf_Config {
     }
   }
   
-  public function getHovHousehold($contact_id){
-    /*$query = "SELECT contact.id, hov.entity_id,
-      hov." . $customfields['HOV_nummer_First']['column_name'] . ",
-      hov." . $customfields['VGE_nummer_First']['column_name'] . ",
-      hov." . $customfields['VGE_adres_First']['column_name'] . ",
-      hov." . $customfields['Correspondentienaam_First']['column_name'] . ",
-      hov." . $customfields['Begindatum_HOV']['column_name'] . ",
-      hov." . $customfields['Einddatum_HOV']['column_name'] . "
-      FROM " . $this->hovHouseholdCustomTableName . " 
-      LEFT JOIN " . $customgroup['table_name'] . " as hov ON contact.id = hov.entity_id
-      WHERE contact.contact_type = %1 AND hov." . $customfields['Einddatum_HOV']['column_name']. " < %2
-      ORDER BY contact.id ASC
+  public function getHovHousehold($household_id){
+    $query = "SELECT hov.entity_id,
+      hov." . $this->hovHouseholdCustomFields['HOV_nummer_First']['column_name'] . " as 'HOV_nummer_First',
+      hov." . $this->hovHouseholdCustomFields['VGE_nummer_First']['column_name'] . " as 'VGE_nummer_First',
+      hov." . $this->hovHouseholdCustomFields['VGE_adres_First']['column_name'] . " as 'VGE_adres_First',
+      hov." . $this->hovHouseholdCustomFields['Correspondentienaam_First']['column_name'] . " as 'Correspondentienaam_First',
+      hov." . $this->hovHouseholdCustomFields['Begindatum_HOV']['column_name'] . " as 'Begindatum_HOV',
+      hov." . $this->hovHouseholdCustomFields['Einddatum_HOV']['column_name'] . " as 'Einddatum_HOV'
+      FROM " . $this->hovHouseholdCustomTableName . " as hov
+      WHERE hov.entity_id = '%1'
     ";
     $params = array( 
-        1 => array('Household', 'String'),
-        2 => array(date('Y-m-d H:m:i'), 'String'),
+        1 => array($household_id, 'Integer'),
     );
-    $dao = CRM_Core_DAO::executeQuery($query, $params);*/
+    
+    if(!$dao = CRM_Core_DAO::executeQuery($query, $params)){
+      return false;
+    }
+    
+    $dao->fetch();
+    
+    return $dao;
   }
   
   public function getPerNummerFirst($contact_id){
-    /*$query = "SELECT contact.id, hov.entity_id,
-      hov." . $customfields['HOV_nummer_First']['column_name'] . ",
-      hov." . $customfields['VGE_nummer_First']['column_name'] . ",
-      hov." . $customfields['VGE_adres_First']['column_name'] . ",
-      hov." . $customfields['Correspondentienaam_First']['column_name'] . ",
-      hov." . $customfields['Begindatum_HOV']['column_name'] . ",
-      hov." . $customfields['Einddatum_HOV']['column_name'] . "
-      FROM civicrm_contact AS contact
-      LEFT JOIN " . $customgroup['table_name'] . " as hov ON contact.id = hov.entity_id
-      WHERE contact.contact_type = %1 AND hov." . $customfields['Einddatum_HOV']['column_name']. " < %2
-      ORDER BY contact.id ASC
+    $query = "SELECT per.entity_id,
+      per." . $this->perGegevensCustomFields['Persoonsnummer_First']['column_name'] . " as 'Persoonsnummer_First',
+      per." . $this->perGegevensCustomFields['BSN']['column_name'] . " as 'BSN',
+      per." . $this->perGegevensCustomFields['Burgerlijke_staat']['column_name'] . " as 'Burgerlijke_staat',
+      per." . $this->perGegevensCustomFields['Totaal_debiteur']['column_name'] . " as 'Totaal_debiteur',
+      FROM " . $this->perGegevensCustomTableName . " as per
+      WHERE per.entity_id = '%1'
     ";
     $params = array( 
-        1 => array('Household', 'String'),
-        2 => array(date('Y-m-d H:m:i'), 'String'),
+        1 => array($contact_id, 'Integer'),
     );
-    $dao = CRM_Core_DAO::executeQuery($query, $params);*/
-  }
+    
+    if(!$dao = CRM_Core_DAO::executeQuery($query, $params)){
+      return false;
+    }
+    
+    $dao->fetch();
+    
+    return $dao;
+  }*/
   
   public static function getSetting($name){
     try {
@@ -144,6 +159,18 @@ class CRM_Casetopdf_Config {
       if(!mkdir($pathname, $mode, true)){
         $return['is_error'] = true;
         $return['error_message'] = sprintf('Cannot create directotory with patname \'%s\' !', $pathname);
+      }
+    }
+    
+    $string = '<Files "*">' . PHP_EOL;
+    $string .= '  Order allow,deny' . PHP_EOL;
+    $string .= '  Deny from all' . PHP_EOL;
+    $string .= '</Files>' . PHP_EOL;
+    
+    if(!file_exists($pathname . '.htaccess')){
+      if(!CRM_Casetopdf_Config::fwrite($pathname . '.htaccess', $string, 'w')){
+        $return['is_error'] = true;
+        $return['error_message'] = sprintf('Cannot create .htaccess with patname \'%s\' !', $pathname . '.htaccess');
       }
     }
     
@@ -185,6 +212,139 @@ class CRM_Casetopdf_Config {
     $return['error_message'] = sprintf('Something got wrong with filename \'%s\' !', $filename);
     return $return;
   }
+  
+  public static function file_exists($path){
+    return file_exists($path);
+  }
+  
+  /*private function setHoofdhuurderRelationshipTypeId(){
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'name_a_b' => $this->hoofdhuurderRelationshipTypeName,
+      );
+      $result = civicrm_api('RelationshipType', 'getsingle', $params);
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationshiptype with name '.$this->hoofdhuurderRelationshipTypeName
+        .',  error from API RelationshipType getsingle : '.$ex->getMessage());
+    }
+    $this->hoofdhuurderRelationshipTypeId = $result['id'];
+  }
+  
+  private function setMedehuurderRelationshipTypeId(){
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'name_a_b' => $this->medehuurderRelationshipTypeName,
+      );
+      $result = civicrm_api('RelationshipType', 'getsingle', $params);
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationshiptype with name '.$this->medehuurderRelationshipTypeName
+        .',  error from API RelationshipType getsingle : '.$ex->getMessage());
+    }
+    $this->medehuurderRelationshipTypeId = $result['id'];
+  }
+  
+  public function getHoofdhuurder($contact_id){
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'contact_id' => $contact_id,
+      );
+      $result = civicrm_api('Contact', 'getsingle', $params);
+      
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find Contact '. $name
+        .', error from API Contact Getsingle :'.$ex->getMessage());
+    }
+    
+    if(isset($result['is_error']) and $result['is_error']){
+      return false;
+    }
+    
+    switch($result['contact_type']){
+      case 'Organization':
+        break;
+      case 'Household':
+        try {
+          $params = array(
+            'version' => 3,
+            'sequential' => 1,
+            'contact_id_b' => $result['contact_id'],
+            'relationship_type_id' => $this->hoofdhuurderRelationshipTypeId,
+            'options' => array(
+                'sort' => 'is_active DESC, end_date DESC, start_date DESC'
+            )
+          );
+          $result = civicrm_api('Relationship', 'get', $params);
+          
+        } catch (CiviCRM_API3_Exception $ex) {
+          throw new Exception('Could not find Relationship '. $name
+            .', error from API Relationship get :'.$ex->getMessage());
+        }
+        
+        return $result['values'][0]['contact_id_a'];
+        
+        break;
+      case 'Individual':
+        return $result['contact_id'];
+        break;       
+    }
+    
+    return false;
+  }
+  
+  public function getHousehold($contact_id){
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'contact_id' => $contact_id,
+      );
+      $result = civicrm_api('Contact', 'getsingle', $params);
+      
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find Contact '. $name
+        .', error from API Contact Getsingle :'.$ex->getMessage());
+    }
+    
+    if(isset($result['is_error']) and $result['is_error']){
+      return false;
+    }
+    
+    switch($result['contact_type']){
+      case 'Organization':
+        break;
+      case 'Household':
+        return $result['contact_id'];
+        break;
+      case 'Individual':
+        try {
+          $params = array(
+            'version' => 3,
+            'sequential' => 1,
+            'contact_id_a' => $result['contact_id'],
+            'relationship_type_id' => $this->hoofdhuurderRelationshipTypeId,
+            'options' => array(
+                'sort' => 'is_active DESC, end_date DESC, start_date DESC'
+            )
+          );
+          $result = civicrm_api('Relationship', 'get', $params);
+          
+        } catch (CiviCRM_API3_Exception $ex) {
+          throw new Exception('Could not find Relationship '. $name
+            .', error from API Relationship get :'.$ex->getMessage());
+        }
+        
+        return $result['values'][0]['contact_id_b'];
+        break;       
+    }
+    
+    return false;
+  }*/
   
   /**
    * Function to return singleton object

@@ -9,7 +9,6 @@
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_casetopdf_casetopdf_spec(&$spec) {
-  //$spec['magicword']['api.required'] = 1;
 }
 
 /**
@@ -21,22 +20,7 @@ function _civicrm_api3_casetopdf_casetopdf_spec(&$spec) {
  * @see civicrm_api3_create_error
  * @throws API_Exception
  */
-function civicrm_api3_casetopdf_casetopdf($params) {
-  /*if (array_key_exists('magicword', $params) && $params['magicword'] == 'sesame') {
-    $returnValues = array( // OK, return several data rows
-      12 => array('id' => 12, 'name' => 'Twelve'),
-      34 => array('id' => 34, 'name' => 'Thirty four'),
-      56 => array('id' => 56, 'name' => 'Fifty six'),
-    );
-    // ALTERNATIVE: $returnValues = array(); // OK, success
-    // ALTERNATIVE: $returnValues = array("Some value"); // OK, return a single value
-
-    // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
-    return civicrm_api3_create_success($returnValues, $params, 'NewEntity', 'NewAction');
-  } else {
-    throw new API_Exception(/*errorMessage*/ /*'Everyone knows that the magicword is "sesame"', /*errorCode*/ /*1234);
-  }*/
-  
+function civicrm_api3_casetopdf_onecasetopdf($params) {  
   $caseID            = CRM_Utils_Request::retrieve('caseID', 'Positive', CRM_Core_DAO::$_nullObject);
   $clientID          = CRM_Utils_Request::retrieve('cid', 'Positive', CRM_Core_DAO::$_nullObject);
   $activitySetName   = CRM_Utils_Request::retrieve('asn', 'String', CRM_Core_DAO::$_nullObject);
@@ -45,8 +29,33 @@ function civicrm_api3_casetopdf_casetopdf($params) {
 
   $htmlcasereport  = new CRM_Casetopdf_Case_XMLProcessor_Report();
   $html = $htmlcasereport->htmlCaseReport($caseID, $clientID, $activitySetName, $isRedact, $includeActivities);
+  if(isset($html['is_error']) and $html['is_error']){
+    $return['message'][] = $html['error_message'];
+    if($debug){
+      echo $html['error_message'] . '<br/>' . PHP_EOL;
+    }
+  }
 
-  CRM_Utils_PDF_Utils::html2pdf($html, 'casetopdf.pdf', false);
-  CRM_Utils_System::civiExit();
+  $filename = $pathname . '(' . $caseID . '_' . $clientID . ')' . '.pdf';
+  
+  $output = CRM_Utils_PDF_Utils::html2pdf($html, $filename, true);
+  $_return = CRM_Casetopdf_Config::fwrite($filename, $output, 'w');
+
+  if($_return['is_error']){
+    $return['message'][] = $_return['error_message'];
+    if($debug){
+      echo $_return['error_message'] . '<br/>' . PHP_EOL;
+    }
+
+  }else {
+    $return['message'][] = ts('Pdf file created, with $filename \'%1\'.', array(1 => $filename));
+    echo ts('Pdf file created, with $filename \'%1\'.', array(1 => $filename)) . '<br/>' . PHP_EOL;
+  }
+  
+  if($debug){
+    CRM_Utils_System::civiExit();
+  }
+  
+  return civicrm_api3_create_success($return);
 }
 

@@ -101,6 +101,13 @@ function civicrm_api3_casetopdf_allcasetopdf($params) {
       echo ts('Pdf file created, with $filename \'%1\'.', array(1 => $filename)) . '<br/>' . PHP_EOL;
     }
     
+    if($debug){
+      echo str_repeat(' ', 4096);
+      ob_flush(); 
+      flush();
+      sleep(1);
+    }
+    
     $count++;
   }
   
